@@ -1,11 +1,7 @@
 from generator import Generator
 
 from PySide6.QtCore import (
-    QSize as Size
-)
-
-from PySide6.QtGui import (
-    QClipboard as Clipboard
+    QSize as Size, Qt
 )
 
 from PySide6.QtWidgets import (
@@ -16,9 +12,11 @@ from PySide6.QtWidgets import (
     QMessageBox as MsgBox,
     QPushButton as Button,
     QGridLayout as GridL,
+    QVBoxLayout as VBoxL,
     QHBoxLayout as HBoxL,
     QApplication as App,
-    QMainWindow as MainWin
+    QMainWindow as MainWin,
+    QLineEdit as LineEdit
 )
 
 
@@ -27,6 +25,14 @@ class MainWindow(MainWin):
         super().__init__()
 
         self.setWindowTitle("birkPassgen")
+
+        self.pwd = ""
+
+        # Поле для сгенерированного пароля
+        self.pwd_field = LineEdit()
+        self.pwd_field.setPlaceholderText("Тут будет пароль")
+        self.pwd_field.setAlignment(Qt.AlignCenter)
+        self.pwd_field.textEdited.connect(self.__pwd_changed)
 
         # Длина пароля
         self.pwd_length_label = Label("Длина пароля:")
@@ -68,20 +74,24 @@ class MainWindow(MainWin):
         self.default.clicked.connect(self.__default)
 
         # Размещение элементов
-        self.layout = GridL()
-        self.layout.addWidget(self.pwd_length_label, 0, 0)
-        self.layout.addLayout(self.pwd_length_layout, 0, 1)
-        self.layout.addWidget(self.lower_checkbox, 1, 0)
-        self.layout.addWidget(self.upper_checkbox, 1, 1)
-        self.layout.addWidget(self.numbers_checkbox, 2, 0)
-        self.layout.addWidget(self.specsyms_checkbox, 2, 1)
-        self.layout.addWidget(self.default, 3, 0)
-        self.layout.addWidget(self.generate, 3, 1)
+        self.generator_layout = GridL()
+        self.generator_layout.addWidget(self.pwd_length_label, 0, 0)
+        self.generator_layout.addLayout(self.pwd_length_layout, 0, 1)
+        self.generator_layout.addWidget(self.lower_checkbox, 1, 0)
+        self.generator_layout.addWidget(self.upper_checkbox, 1, 1)
+        self.generator_layout.addWidget(self.numbers_checkbox, 2, 0)
+        self.generator_layout.addWidget(self.specsyms_checkbox, 2, 1)
+        self.generator_layout.addWidget(self.default, 3, 0)
+        self.generator_layout.addWidget(self.generate, 3, 1)
+
+        self.main_layout = VBoxL()
+        self.main_layout.addWidget(self.pwd_field, 0)
+        self.main_layout.addLayout(self.generator_layout, 1)
 
         container = Widget()
-        container.setLayout(self.layout)
+        container.setLayout(self.main_layout)
 
-        self.setFixedSize(Size(310, 125))
+        self.setFixedSize(Size(310, 150))
 
         self.setCentralWidget(container)
 
@@ -89,7 +99,6 @@ class MainWindow(MainWin):
         self.generate.setEnabled(False)
         self.default.setEnabled(False)
 
-        clipboard = Clipboard()
         generator = Generator(
             password_length=self.pwd_length_spinbox.value(),
             lower_registry=self.lower_checkbox.isChecked(),
@@ -98,23 +107,23 @@ class MainWindow(MainWin):
             special_symbols=self.specsyms_checkbox.isChecked()
         )
 
+        self.pwd = generator.new_password()
+
         try:
-            clipboard.setText(generator.new_password())
+            self.pwd_field.setText(self.pwd)
         except ValueError:
             MsgBox.critical(
                 self,
                 "birkPassgen",
                 "Вы не выбрали ни одного типа символов.\nВыберите хотя бы один тип символов и повторите попытку.\n"
             )
-        finally:
-            MsgBox.information(
-                self,
-                "birkPassgen",
-                "Пароль сгенерирован и скопирован в буфер обмена"
-            )
 
         self.generate.setEnabled(True)
         self.default.setEnabled(True)
+
+    def __pwd_changed(self):
+        if self.pwd_field.text() != self.pwd:
+            self.pwd_field.setText(self.pwd)
 
     def __default(self):
         self.generate.setEnabled(False)
