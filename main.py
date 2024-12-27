@@ -129,6 +129,9 @@ class MainWindow(MainWin):
         self.generate.setEnabled(False)
         self.default.setEnabled(False)
 
+        self.pwd = ""
+        self.pwd_field.setText(self.pwd)
+
         self.pwd_length_spinbox.setValue(16)
         self.lower_checkbox.setChecked(True)
         self.upper_checkbox.setChecked(True)
